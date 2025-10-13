@@ -1,7 +1,7 @@
 import {LlmAgent} from "@iqai/adk";
 
 
-export const  sentimentAnalyzer = new LlmAgent({
+export const sentimentAnalyzer = new LlmAgent({
     name: "sentiment_analyzer",
     model: "gemini-2.5-flash",
     description: "Analyzes emotional tone and sentiment",
