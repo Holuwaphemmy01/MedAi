@@ -1,11 +1,14 @@
-import {LlmAgent} from "@iqai/adk";
+import { LlmAgent } from "@iqai/adk";
 
-
-export const sentimentAnalyzer = new LlmAgent({
-    name: "sentiment_analyzer",
-    model: "gemini-2.5-flash",
-    description: "Analyzes emotional tone and sentiment",
-    instruction:
-        "Analyze the sentiment and emotional tone of the content. Classify as positive, negative, or neutral with confidence scores.",
-    outputKey: "sentiment_analysis",
+export const RecommendationAgent = new LlmAgent({
+    name: "recommendation_agent",
+    model: "gpt-4o-mini",
+    description: "Suggests safe next steps based on analysis",
+    instruction: `
+    Using symptom_analysis and patient_details, provide safe recommendations:
+    - immediate actions (rest, fluids),
+    - red flags that require urgent care,
+    - suggestions to see a doctor.
+  `,
+    outputKey: "recommendation",
 });
