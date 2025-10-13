@@ -1,4 +1,4 @@
-// src/agents/index.ts
+// src/agents/Index.ts
 import { agent } from "./src/agents/example.ts";
 import dotenv from "dotenv";
 
