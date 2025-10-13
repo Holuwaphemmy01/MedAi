@@ -1,5 +1,5 @@
 // src/agents/Index.ts
-import { agent } from "./src/agents/example.ts";
+import { agent } from "./agents/example.ts";
 import dotenv from "dotenv";
 
 dotenv.config();
