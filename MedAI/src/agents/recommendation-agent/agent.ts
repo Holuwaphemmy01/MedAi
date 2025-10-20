@@ -5,7 +5,7 @@ import { env } from "../../env";
 export const getRecommendationAgent = () => {
     const recommendationAgent = new LlmAgent({
         name: "recommendation_agent",
-        description: "Responsible for providing personalized treatment recommendations based on the analyzed symptom data and patient history. It takes into account the patient's unique circumstances, preferences, and medical guidelines to suggest appropriate interventions.",
+        description: "Interprets the results from the SymptomAnalyzerAgent and provides clear, human-readable recommendations. This includes possible diagnoses, next steps such as rest, hydration, over-the-counter options, or when to seek medical care. The agent ensures advice is safe, general, and compliant with non-diagnostic health information standards.",
         model: env.LLM_MODEL,
     });
 
