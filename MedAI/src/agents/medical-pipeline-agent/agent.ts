@@ -4,11 +4,20 @@ import { getRecommendationAgent } from "../recommendation-agent/agent";
 import { getQuestionFromUserAgent } from "../question-asker-agent/agent";
 
 
-export const getMedicalPipelineAgent = new SequentialAgent({
-  name: "medical-pipeline-research-agent",
-  description: "Comprehensive market analysis and strategy development",
-  subAgents: [getQuestionFromUserAgent, getSymptomAnalyzerAgent(), getRecommendationAgent()],
-});
+// export const getMedicalPipelineAgent = new SequentialAgent({
+//   name: "medical-pipeline-research-agent",
+//   description: "Comprehensive market analysis and strategy development",
+//   subAgents: [getQuestionFromUserAgent(), getSymptomAnalyzerAgent(), getRecommendationAgent()],
+// });
+
+
+export const getMedicalPipelineAgent = () =>
+  new SequentialAgent({
+    name: "medicalPipelineResearchAgent",
+    description: "Comprehensive market analysis and strategy development",
+    subAgents: [getQuestionFromUserAgent(), getSymptomAnalyzerAgent(), getRecommendationAgent()],
+  });
+
 
 
 
