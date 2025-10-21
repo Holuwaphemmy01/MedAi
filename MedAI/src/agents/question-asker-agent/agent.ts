@@ -24,7 +24,7 @@ import { LlmAgent, LoopAgent, Event, EventActions } from "@iqai/adk";
 const questionAgent = new LlmAgent({
   name: "question-asker",
   model: "gpt-4o-mini",
-  instruction: `
+  description: `
     You are a medical intake assistant.
     Ask the user one relevant question at a time about their condition.
     Focus on gathering information like:
@@ -47,7 +47,7 @@ const completenessChecker = new (class extends LlmAgent {
     super({
       name: "completeness-checker",
       model: "gpt-4o-mini",
-      instruction: `
+      description: `
         Review the collected responses and decide:
         If enough info exists to analyze symptoms (age, duration, severity, medical history, etc.),
         respond ONLY with "DONE".
