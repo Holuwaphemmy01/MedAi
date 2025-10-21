@@ -83,7 +83,7 @@ const stopConditionChecker = new (class extends LlmAgent {
 /**
  * Step 4: Wrap them into a loop — the main QuestionAskerAgent
  */
-export const QuestionAskerAgent = new LoopAgent({
+export const getQuestionFromUserAgent = new LoopAgent({
   name: "question-loop",
   description: "Continuously asks relevant questions until enough health data is gathered",
   subAgents: [questionAgent, completenessChecker, stopConditionChecker],
