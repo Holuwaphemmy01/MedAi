@@ -19,7 +19,7 @@ export const getTelegramAgent = async (samplingHandler: SamplingHandler) => {
 		description:
 			"An agent capable of interacting with Telegram. It can send messages, add reactions to messages, retrieve group and channel information, and perform various Telegram management tasks.",
 		model: env.LLM_MODEL,
-		tools: telegramMcpTools,
+		tools: [...telegramMcpTools],
 	});
 	return telegramAgent;
 };
