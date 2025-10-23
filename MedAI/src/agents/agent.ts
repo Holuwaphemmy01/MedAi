@@ -3,17 +3,7 @@ import dotenv from "dotenv";
 import { getMedicalPipelineAgent } from "./medical-pipeline-agent/agent";
 dotenv.config();
 
-/**
- * Creates and configures the root medical agent for the MedAI app.
- *
- * This root agent handles user interactions and routes them through the
- * medical pipeline, which consists of:
- *  - QuestionAskerAgent (collects user details)
- *  - SymptomAnalyzerAgent (analyzes symptoms)
- *  - RecommendationAgent (provides recommendations)
- *
- * The root agent serves as the entry point of the AI flow.
- */
+
 export const getRootAgent = () => {
   const medicalPipelineAgent = getMedicalPipelineAgent();
 

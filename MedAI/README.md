@@ -119,6 +119,26 @@ Then you may try adk run or adk web for interactive testing. These are optional 
 ## License
 - MIT (as declared in package.json). TODO: add a LICENSE file to the repository root if one is desired.
 
+## Deploying to Vercel (Websites)
+Vercel is optimized for request/response workloads (static sites, Next.js, serverless/edge functions). This project is a long‑running Telegram bot process that keeps a connection open to Telegram via MCP and does not expose an HTTP handler. As‑is, it is not a good fit for Vercel serverless because Vercel does not allow background/long‑lived processes.
+
+If you still want to use Vercel, you would need to refactor the bot to an HTTP webhook model so Telegram calls your Vercel Function on each update. That refactor is not implemented in this repository. High‑level changes required:
+- Add an HTTP handler (api/telegram.ts) that verifies Telegram updates and routes messages into your agents.
+- Switch the Telegram integration to webhook mode instead of a long‑running MCP process.
+- Ensure all work completes within the Vercel function timeout and is stateless between requests (persist conversation in an external store).
+
+Build command on Vercel (if you add a webhook function):
+- Install Command: npm install
+- Build Command: npm run build
+- Output Directory: none (serverless functions don’t produce a static output)
+
+Recommended deployment targets for this repository without refactors:
+- Railway.app: Deploy as a long‑running Node service (start command: npm start); set TELEGRAM_BOT_TOKEN and GOOGLE_API_KEY env vars.
+- Render.com: Web Service, Node runtime; Build Command: npm run build; Start Command: npm start.
+- Fly.io / Docker / a VM/VPS: Run the Node process continuously.
+
+If you want us to add the webhook HTTP function for Vercel, please confirm and we’ll create a minimal api/telegram endpoint and adapt the Telegram integration accordingly.
+
 ## Notes and TODOs
 - Verify Node.js version used in deployment and update Requirements accordingly.
 - Add tests and CI.
