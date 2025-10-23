@@ -1,187 +1,125 @@
+# MedAI
 
-<div align="center">
-
-<img src="https://files.catbox.moe/vumztw.png" alt="ADK TypeScript Logo" width="100" />
-
-_Persistent Memory • Telegram Integration • TypeScript_
+AI-powered Telegram health assistant built with TypeScript and the IQAI ADK. MedAI guides users through a short conversation, analyzes symptoms, and provides safe, general health recommendations. The bot runs on Telegram using the Model Context Protocol (MCP) provided by @iqai/adk.
 
 ---
 
-</div>
+## Overview
 
+MedAI is organized as a small set of cooperating LLM agents:
+- Question Asker: collects age, duration of symptoms, description, and history, one question at a time.
+- Symptom Analyzer: reasons over the collected information using the configured LLM model.
+- Recommendation Agent: summarizes likely causes and safe next steps (non-diagnostic guidance).
+- Telegram Agent: connects the pipeline to Telegram via MCP and relays messages.
 
-A Telegram bot starter template powered by ADK (AI Development Kit) that enables you to create intelligent, conversational bots for Telegram. This template provides a solid foundation for building AI-powered Telegram bots with persistent conversation memory.
+The runtime entry point is src/index.ts, which wires the pipeline, the Telegram MCP tools, and a simple response formatter.
 
----
+## Tech Stack
+- Language: TypeScript (tsc, tsx)
+- Runtime: Node.js
+- Framework/SDK: @iqai/adk (agents, MCP Telegram integration)
+- Validation: zod
+- Env management: dotenv
+- Build: TypeScript compiler (tsc)
 
+## Requirements
+- Node.js LTS (recommended): 18+ (TODO: verify exact version used in deployment)
+- A Telegram bot token from @BotFather
+- A Google AI Studio API key (for Gemini) or compatible key for the configured model
 
+## Getting Started
 
+1) Clone and install
+- Using npm (package-lock.json is present in this repo):
+  - npm install
+- Using pnpm (optional):
+  - pnpm install
 
-## Prerequisites
+2) Configure environment
+Create a .env file in the project root with the variables below. There is no example.env in this repo; create it manually.
 
+Example .env
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token
+GOOGLE_API_KEY=your_google_api_key
+# Optional overrides
+LLM_MODEL=gemini-2.5-flash
+ADK_DEBUG=false
 
-> [!note]
-> **You'll need the following before you begin.** For details on how to obtain these, see [Configure Your Bot](#3-configure-your-bot).
+3) Create your Telegram bot
+- Open Telegram and talk to @BotFather
+- Send /newbot and follow prompts to obtain a token
+- Put the token into TELEGRAM_BOT_TOKEN in .env
 
-- **Telegram Bot Token**: Create a bot via [@BotFather](https://t.me/botfather) on Telegram
-- **AI API Key**: Get an API key for your chosen AI model (e.g., Google AI Studio for Gemini)
+4) Run in development
+- npm run dev
+  - Starts tsx watching src/index.ts
 
-## Quick Start
+5) Build and run in production
+- npm run build
+  - Compiles to dist/
+- npm start
+  - Runs dist/index.js
 
+## Scripts
+Defined in package.json:
+- dev: tsx watch src/index.ts
+- build: tsc
+- prebuild: pnpm clean (invoked by build; see note below)
+- clean: rimraf dist
+- start: node dist/index.js
 
-The easiest way to create a new Telegram bot project using this template is with the ADK CLI:
+Note: prebuild uses pnpm clean. If you use npm only, prebuild will still execute the clean script correctly because it is defined in package.json. You do not need pnpm installed to run npm run build.
 
-```bash
-npm install -g @iqai/adk-cli # if you haven't already
-adk new --template telegram-bot my-telegram-bot
-cd my-telegram-bot
-pnpm install
-```
-
-You can also use this template directly by copying the files, but using the CLI is recommended for best results.
-
-### Running the Bot
-
-**Default (Production/Development) Route**
-
-To run your Telegram bot in production or for standard development, use:
-```bash
-pnpm dev
-```
-
-**Fast Iteration & Agent Setup (ADK CLI)**
-
-For rapid prototyping, interactive testing, or initial agent setup, use the ADK CLI:
-```bash
-adk run   # Interactive CLI chat with your agents
-adk web   # Web interface for easy testing and demonstration
-```
-
-2. **Environment setup**
-   ```bash
-   cp example.env .env
-   # Edit .env with your tokens and API keys
-   ```
-
-
-3. **Configure Your Bot**
-
-To set up your Telegram bot:
-
-1. Start a chat with [@BotFather](https://t.me/botfather) on Telegram.
-2. Send `/newbot` and follow the instructions to create a new bot.
-3. Choose a name and a username for your bot (the username must end in 'bot').
-4. Copy the token provided by BotFather.
-5. Add the token to your `.env` file as `TELEGRAM_BOT_TOKEN`.
-6. (Optional) Adjust other environment variables as needed.
-
-4. **Development**
-   
-   **Option 1: Traditional Development**
-   ```bash
-   pnpm dev
-   ```
-   
-   **Option 2: ADK CLI (Recommended for Testing)**
-   
-   First, install the ADK CLI globally:
-   ```bash
-   npm install -g @iqai/adk-cli
-   ```
-   
-   Then use either:
-   ```bash
-   # Interactive CLI chat with your agents
-   adk run
-   
-   # Web interface for easy testing
-   adk web
-   ```
-
-5. **Production**
-   ```bash
-   pnpm build
-   pnpm start
-   ```
-
+## Entry Points
+- Runtime entry: src/index.ts (compiled to dist/index.js)
+- Root agent builder: src/agents/agent.ts
+- Telegram MCP agent: src/agents/telegram-agent/agent.ts and src/agents/telegram-agent/tool.ts
 
 ## Environment Variables
+Validated in src/env.ts using zod. Required unless defaulted.
+- TELEGRAM_BOT_TOKEN: Telegram Bot API token (required)
+- GOOGLE_API_KEY: API key for the configured LLM (required)
+- LLM_MODEL: Model name (default: gemini-2.5-flash)
+- ADK_DEBUG: boolean flag (default: false)
 
-Required variables in your `.env` file:
+## How it Works (High Level)
+- src/index.ts initializes dotenv, builds the root agent (src/agents/agent.ts), creates a sampling handler, and sets up the Telegram agent tools via MCP.
+- The QuestionAsker loops until required info is gathered (INFO_COMPLETE), then the SymptomAnalyzer and RecommendationAgent produce a response.
+- formatMedAIResponse in src/utils/medAIFormatter.ts cleans response text for Telegram.
 
-```env
-# Telegram Bot Configuration
-TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
-
-# AI Model Configuration
-LLM_MODEL=gemini-2.5-flash
-GOOGLE_API_KEY=your_google_api_key_here
-
-# Optional
-ADK_DEBUG=false
-```
-
-## About MCP & Sampling
-
-This template uses the Model Context Protocol (MCP) to connect your agent to Telegram. The MCP server listens for new messages and events, and uses "sampling" to request LLM completions from your agent. This enables your bot to respond to messages and perform actions in Telegram, supporting true agentic, bi-directional communication.
-
-For more details, see the [MCP Telegram documentation](https://adk.iqai.com/docs/mcp-servers/telegram).
-
-
-
-
-## Database
-
-- **Location**: `src/data/telegram_bot.db`
-- **Purpose**: Stores conversation history and context
-- **Auto-created**: Database and tables are created automatically
-
-
-
-## File Structure
-
-```
-src/
-├── agents/           # Agent definitions (compatible with ADK CLI)
-│   ├── agent.ts      # Root agent configuration
-│   ├── telegram-agent/ # Telegram-specific agent and tools
-│   ├── joke-agent/   # Joke-telling agent
-│   └── weather-agent/ # Weather information agent
-├── index.ts          # Main bot initialization and configuration
-├── env.ts            # Environment variable validation
-└── data/             # SQLite database storage (auto-created)
-   └── telegram_bot.db
-```
+## Project Structure
+- src/
+  - index.ts — app entry point
+  - env.ts — zod-validated environment
+  - utils/
+    - medAIFormatter.ts — strips markdown artifacts for clean Telegram output
+  - agents/
+    - agent.ts — root agent setup
+    - medical-pipeline-agent/
+      - agent.ts — sequential pipeline (question → analyze → recommend)
+    - question-asker-agent/
+      - agent.ts — LoopAgent that gathers user info
+    - symptom-analyzer-agent/
+      - agent.ts — uses env.LLM_MODEL for analysis
+    - recommendation-agent/
+      - agent.ts — produces safe, general recommendations
+    - telegram-agent/
+      - agent.ts — defines Telegram-facing agent
+      - tool.ts — initializes MCP Telegram tools
 
 
-## Deployment
+## Data and Persistence
+- This repository does not explicitly configure a database. A src/data/ path is ignored in .gitignore for potential future use. TODO: document any persistence if added later.
 
-### Local Development
-```bash
-pnpm dev
-```
+## Running with ADK CLI (Optional)
+If you use the ADK CLI for local prototyping, you can install it globally:
+- npm install -g @iqai/adk-cli
+Then you may try adk run or adk web for interactive testing. These are optional and not required to run MedAI.
 
-### Production Server
-```bash
-pnpm build
-pnpm start
-```
+## License
+- MIT (as declared in package.json). TODO: add a LICENSE file to the repository root if one is desired.
 
-### Docker
-```bash
-docker build -t telegram-bot .
-docker run --env-file .env telegram-bot
-```
-
-
-## Testing Your Bot
-
-You can test your bot by sending messages to it on Telegram, or by using the ADK CLI for local/interactive testing.
-
-
-## Learn More
-
-- [ADK Documentation](https://adk.iqai.com)
-- [MCP Telegram Server Docs](https://adk.iqai.com/docs/mcp-servers/telegram)
-- [Telegram Bot API](https://core.telegram.org/bots/api)
-- [BotFather Guide](https://core.telegram.org/bots#6-botfather)
+## Notes and TODOs
+- Verify Node.js version used in deployment and update Requirements accordingly.
+- Add tests and CI.
+- If Dockerization is required, add a Dockerfile and document usage.
