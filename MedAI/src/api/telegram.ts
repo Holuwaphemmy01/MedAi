@@ -86,7 +86,7 @@ export default async function handler(req: any, res: any) {
       const telegramAgent = await getTelegramAgent(samplingHandler);
 
       // **Run** the Telegram agent with incoming webhook data
-      await (telegramAgent as any).run(req, res);
+      await (telegramAgent as any).ask(req.body.message.text);
 
       // Important: end the response (Telegram expects 200)
       res.status(200).end();
