@@ -1,14 +1,8 @@
-//  {
-//   "outputDirectory": "dist"
-// }
-
-
 {
-  "version": 2,
-  "builds": [
-    { "src": "src/api/telegram.ts", "use": "@vercel/node" }
-  ],
   "routes": [
-    { "src": "/api/telegram", "dest": "src/api/telegram.ts" }
-  ]
+    { "src": "/api/telegram", "dest": "/pages/api/telegram.ts" }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  }
 }
