@@ -2,10 +2,14 @@
 
 {
   "routes": [
-    { "src": "/api/telegram", "dest": "/pages/api/telegram.ts" }
+    { "src": "/api/telegram", "dest": "/api/telegram.ts" }
   ],
   "env": {
     "NODE_ENV": "production"
   },
-  "outDir": "dist"
+  "build": {
+    "env": {
+      "NODE_ENV": "production"
+    }
+  }
 }
