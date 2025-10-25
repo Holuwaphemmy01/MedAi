@@ -1,7 +1,10 @@
 import axios from "axios";
 import { getRootAgent } from "../src/agents/agent";
 import { formatMedAIResponse } from "../src/utils/medAIFormatter";
-import { env } from "../src/env";
+//import { env } from "../src/env";
+import dotenv from "dotenv";
+dotenv.config();
+
 
 let cachedRunnerPromise: Promise<any> | null = null;
 
@@ -43,7 +46,7 @@ export default async function handler(req: any, res: any) {
     // Clean/format the AI response before sending back to Telegram
     const reply = formatMedAIResponse(rawResult);
 
-    const telegramUrl = `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`;
+    const telegramUrl = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`;
     await axios.post(telegramUrl, {
       chat_id: chatId,
       text: reply,
