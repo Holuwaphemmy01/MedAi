@@ -24,9 +24,14 @@ async function getCachedRunner() {
 }
 
 export default async function handler(req: any, res: any) {
+  // Health endpoint: quick check without initializing the agent
+  if (req.method === "GET") {
+    return res.status(200).json({ ok: true, status: "healthy" });
+  }
+
   if (req.method !== "POST") {
-    res.setHeader("Allow", "POST");
-    return res.status(405).end("Method Not Allowed");
+    res.setHeader("Allow", "GET, POST");
+    return res.status(405).json({ ok: false, error: { message: "Method Not Allowed" } });
   }
 
   const update = req.body || {};
@@ -34,27 +39,57 @@ export default async function handler(req: any, res: any) {
   const chatId = update.message?.chat?.id ?? update.callback_query?.message?.chat?.id;
 
   if (!chatId) {
-    return res.status(200).end("no chat id");
+    return res.status(400).json({ ok: false, error: { message: "Missing chat id in update" } });
   }
 
+  const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+  if (!TELEGRAM_BOT_TOKEN) {
+    console.error("Missing TELEGRAM_BOT_TOKEN environment variable");
+    return res.status(500).json({ ok: false, error: { message: "Server misconfiguration: TELEGRAM_BOT_TOKEN is not set" } });
+  }
+
+  let runner: any;
   try {
-    const runner = await getCachedRunner();
+    runner = await getCachedRunner();
+  } catch (err: any) {
+    console.error("Failed to initialize agent runner:", err);
+    return res.status(500).json({ ok: false, error: { message: "Failed to initialize agent runner", details: err?.message ?? String(err) } });
+  }
 
-    // runner.ask() is used in your existing `src/index.ts` — call similarly.
-    const rawResult = await runner.ask(text);
+  // Defensive call to runner.ask
+  let rawResult: any;
+  try {
+    // Some runners expect structured input; prefer passing text directly as in your index.ts
+    rawResult = await runner.ask(text);
+  } catch (err: any) {
+    console.error("runner.ask failed:", err);
+    return res.status(502).json({ ok: false, error: { message: "AI model request failed", details: err?.message ?? String(err) } });
+  }
 
-    // Clean/format the AI response before sending back to Telegram
-    const reply = formatMedAIResponse(rawResult);
+  // Attempt to format the result; guard against formatter errors
+  let reply: string;
+  try {
+    reply = formatMedAIResponse(rawResult);
+  } catch (err: any) {
+    console.error("formatMedAIResponse failed:", err);
+    // Fallback: try to coerce a string from rawResult
+    try {
+      reply = typeof rawResult === "string" ? rawResult : JSON.stringify(rawResult);
+    } catch (e: any) {
+      reply = "(failed to generate reply)";
+    }
+  }
 
-    const telegramUrl = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`;
+  const telegramUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+  try {
     await axios.post(telegramUrl, {
       chat_id: chatId,
       text: reply,
     });
-
-    return res.status(200).end("ok");
-  } catch (err) {
-    console.error("Telegram webhook handler error:", err);
-    return res.status(500).end("internal error");
+  } catch (err: any) {
+    console.error("Failed to send message to Telegram:", err?.response?.data ?? err?.message ?? err);
+    return res.status(502).json({ ok: false, error: { message: "Failed to send message to Telegram", details: err?.response?.data ?? err?.message ?? String(err) } });
   }
+
+  return res.status(200).json({ ok: true });
 }
