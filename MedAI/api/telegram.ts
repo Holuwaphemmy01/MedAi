@@ -82,3 +82,80 @@ async function getRootAgent(): Promise<any> {
 }
 // duplicate stub removed — actual getRootAgent implementation is above
 
+// Handler (exported for both ESM and CommonJS)
+export default async function handler(req: any, res: any) {
+    // Health endpoint
+    if (req.method === "GET") {
+        return res.status(200).json({ ok: true, status: "healthy" });
+    }
+
+    if (req.method !== "POST") {
+        res.setHeader("Allow", "GET, POST");
+        return res.status(405).json({ ok: false, error: { message: "Method Not Allowed" } });
+    }
+
+    const update = req.body || {};
+    const text = update.message?.text ?? update.callback_query?.data ?? "";
+    const chatId = update.message?.chat?.id ?? update.callback_query?.message?.chat?.id;
+
+    if (!chatId) {
+        return res.status(400).json({ ok: false, error: { message: "Missing chat id in update" } });
+    }
+
+    const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    if (!TELEGRAM_BOT_TOKEN) {
+        console.error("Missing TELEGRAM_BOT_TOKEN environment variable");
+        return res.status(500).json({ ok: false, error: { message: "Server misconfiguration: TELEGRAM_BOT_TOKEN is not set" } });
+    }
+
+    let runner: any;
+    try {
+        runner = await getCachedRunner();
+    } catch (err: any) {
+        console.error("Failed to initialize agent runner:", err);
+        return res.status(500).json({ ok: false, error: { message: "Failed to initialize agent runner", details: err?.message ?? String(err) } });
+    }
+
+    let rawResult: any;
+    try {
+        rawResult = await runner.ask(text);
+    } catch (err: any) {
+        console.error("runner.ask failed:", err);
+        return res.status(502).json({ ok: false, error: { message: "AI model request failed", details: err?.message ?? String(err) } });
+    }
+
+    let reply: string;
+    try {
+        reply = formatMedAIResponse(rawResult);
+    } catch (err: any) {
+        console.error("formatMedAIResponse failed:", err);
+        try {
+            reply = typeof rawResult === "string" ? rawResult : JSON.stringify(rawResult);
+        } catch (e: any) {
+            reply = "(failed to generate reply)";
+        }
+    }
+
+    const telegramUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+    try {
+        await axios.post(telegramUrl, {
+            chat_id: chatId,
+            text: reply,
+        });
+    } catch (err: any) {
+        console.error("Failed to send message to Telegram:", err?.response?.data ?? err?.message ?? err);
+        return res.status(502).json({ ok: false, error: { message: "Failed to send message to Telegram", details: err?.response?.data ?? err?.message ?? String(err) } });
+    }
+
+    return res.status(200).json({ ok: true });
+}
+
+// Ensure CommonJS compatibility for Vercel runtime
+try {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    if (typeof module !== "undefined") module.exports = handler;
+} catch (e) {
+    // ignore
+}
+
