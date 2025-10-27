@@ -1,15 +1,8 @@
-
-
 {
-  "routes": [
-    { "src": "/api/telegram", "dest": "/api/telegram.ts" }
-  ],
-  "env": {
-    "NODE_ENV": "production"
-  },
-  "build": {
-    "env": {
-      "NODE_ENV": "production"
+  "version": 2,
+  "functions": {
+    "api/webhook.ts": {
+      "maxDuration": 30
     }
   }
 }
