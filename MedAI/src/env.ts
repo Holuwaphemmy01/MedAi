@@ -16,7 +16,7 @@ export const envSchema = z.object({
 	GOOGLE_API_KEY: z.string(),
 	TELEGRAM_BOT_TOKEN: z.string(),
 	LLM_MODEL: z.string().default("gemini-2.5-flash"),
-});
+ });
 
 /**
  * Validated environment variables parsed from process.env.

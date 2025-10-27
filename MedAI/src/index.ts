@@ -8,6 +8,22 @@ dotenv.config();
 
 async function main() {
 	console.log("🤖 Initializing Telegram bot agent...");
+	console.log("Environment:", {
+		NODE_ENV: process.env.NODE_ENV,
+		TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN ? '✓ Set' : '✗ Missing',
+		GOOGLE_API_KEY: process.env.GOOGLE_API_KEY ? '✓ Set' : '✗ Missing',
+		LLM_MODEL: process.env.LLM_MODEL || 'Not set',
+		ADK_DEBUG: process.env.ADK_DEBUG || 'false'
+	});
+
+	// Test network connectivity
+	try {
+		console.log("Testing network connectivity...");
+		const testResponse = await fetch("https://api.telegram.org");
+		console.log("Network test result:", testResponse.status);
+	} catch (error) {
+		console.error("Network test failed:", error);
+	}
 
 	try {
 		const { runner } = await getRootAgent();
