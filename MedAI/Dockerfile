@@ -109,21 +109,24 @@
 # # ---- Start the bot ---------------------------------------------
 # CMD ["node", "dist/src/index.js"]
 
-
 # ============ BUILD STAGE ============
 FROM node:20-alpine AS builder
 
+# Install ca-certificates (for HTTPS)
+RUN apk add --no-cache ca-certificates
+
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
-COPY tsconfig*.json ./
+# Copy package files (for caching)
+COPY package.json ./
+COPY package-lock.json ./
 
-# Install ALL dependencies (including dev for build)
-RUN npm install
+# Install ALL deps (including devDependencies for tsc)
+RUN npm ci
 
-# Copy source
-COPY src* ./src
+# Copy config & source
+COPY tsconfig.json ./
+COPY src ./src
 
 # Build TypeScript
 RUN npm run build
@@ -131,23 +134,36 @@ RUN npm run build
 # ============ RUNTIME STAGE ============
 FROM node:20-alpine AS runtime
 
+# Install ca-certificates (again, for HTTPS in prod)
+RUN apk add --no-cache ca-certificates
+
 WORKDIR /app
 
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 adkbot
 
-# Copy built app from builder
+# Copy built app + node_modules + package.json
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
 
-# Set non-root user
+# Optional: copy .env.example if you want defaults
+# COPY .env.example ./.env
+
+# Switch to non-root user
 USER adkbot
 
-# Expose port (optional, for health checks or reverse proxy)
-EXPOSE 3000
+# Environment variables (will be overridden by Render)
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV TELEGRAM_BOT_TOKEN=
+ENV GOOGLE_API_KEY=
+ENV LLM_MODEL=
+ENV ADK_DEBUG=false
 
+# Expose port
+EXPOSE 3000
 
 # Start the bot
 CMD ["node", "dist/index.js"]
