@@ -117,13 +117,13 @@ WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
-COPY tsconfig.json ./
+COPY tsconfig*.json ./
 
 # Install ALL dependencies (including dev for build)
 RUN npm ci
 
 # Copy source
-COPY src ./src
+COPY src* ./src
 
 # Build TypeScript
 RUN npm run build
