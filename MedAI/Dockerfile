@@ -52,59 +52,89 @@
 
 
 
-# ---- Base image -------------------------------------------------
-FROM node:20-alpine AS builder
+# # ---- Base image -------------------------------------------------
+# FROM node:20-alpine AS builder
 
-# Install ca-certificates (keeps your HTTPS calls happy)
-RUN apk add --no-cache ca-certificates
+# # Install ca-certificates (keeps your HTTPS calls happy)
+# RUN apk add --no-cache ca-certificates
 
-# ---- Working directory -----------------------------------------
-WORKDIR /app
+# # ---- Working directory -----------------------------------------
+# WORKDIR /app
 
-# ---- Copy only package files (great for caching) ---------------
-COPY package.json ./
-COPY package-lock.json* ./
+# # ---- Copy only package files (great for caching) ---------------
+# COPY package.json ./
+# COPY package-lock.json* ./
 
-# Install *all* deps (dev deps needed for tsc)
-RUN npm ci
+# # Install *all* deps (dev deps needed for tsc)
+# RUN npm ci
 
-# ---- Copy source code -----------------------------------------
-COPY . .
+# # ---- Copy source code -----------------------------------------
+# COPY . .
 
-# ---- Build TypeScript -----------------------------------------
-RUN npm run build
+# # ---- Build TypeScript -----------------------------------------
+# RUN npm run build
 
-# ---- Production stage (smaller image) -------------------------
+# # ---- Production stage (smaller image) -------------------------
+# FROM node:20-alpine
+
+# WORKDIR /app
+
+# # Copy only the built files + node_modules (production only)
+# COPY --from=builder /app/dist ./dist
+# COPY --from=builder /app/node_modules ./node_modules
+# COPY --from=builder /app/package.json ./package.json
+
+# # ---- Environment ------------------------------------------------
+# # ENV NODE_ENV=production
+# # ENV PORT=3000
+
+# # # These will be overridden by Render’s env vars / .env file
+# # ENV TELEGRAM_BOT_TOKEN=
+# # ENV GOOGLE_API_KEY=
+# # ENV LLM_MODEL=
+# # ENV ADK_DEBUG=false
+
+
+# ENV TELEGRAM_BOT_TOKEN=
+
+
+# ENV LLM_MODEL=
+# ENV GOOGLE_API_KEY=
+# ENV ADK_DEBUG=
+# ENV APP_ENV=
+
+# # ---- Expose port -------------------------------------------------
+# EXPOSE 3000
+
+# # ---- Start the bot ---------------------------------------------
+# CMD ["node", "dist/src/index.js"]
+
+
+
+# Dockerfile
 FROM node:20-alpine
 
+# Enable pnpm
+RUN corepack enable && corepack prepare pnpm@9.12.0 --activate
+
 WORKDIR /app
 
-# Copy only the built files + node_modules (production only)
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
+# Copy package files
+COPY package.json pnpm-lock.yaml* ./
 
-# ---- Environment ------------------------------------------------
-# ENV NODE_ENV=production
-# ENV PORT=3000
+# Install deps
+RUN pnpm install --frozen-lockfile
 
-# # These will be overridden by Render’s env vars / .env file
-# ENV TELEGRAM_BOT_TOKEN=
-# ENV GOOGLE_API_KEY=
-# ENV LLM_MODEL=
-# ENV ADK_DEBUG=false
+# Copy code
+COPY . .
 
+# Build
+RUN pnpm build
 
-ENV TELEGRAM_BOT_TOKEN=
+# Production
+ENV NODE_ENV=production
 
+# Render uses $PORT
+EXPOSE $PORT
 
-ENV LLM_MODEL=
-ENV GOOGLE_API_KEY=
-ENV ADK_DEBUG=
-ENV APP_ENV=
-
-# ---- Expose port -------------------------------------------------
-EXPOSE 3000
-
-# ---- Start the bot ---------------------------------------------
-CMD ["node", "dist/src/index.js"]
+CMD ["node", "dist/index.js"]
