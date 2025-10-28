@@ -23,20 +23,18 @@ The runtime entry point is src/index.ts, which wires the pipeline, the Telegram 
 - Build: TypeScript compiler (tsc)
 
 ## Requirements
-- Node.js LTS (recommended): 18+ (TODO: verify exact version used in deployment)
+- Node.js LTS: 18+ recommended; Dockerfile uses Node 20-alpine (TODO: lock exact supported versions)
+- npm (package-lock.json present). You may use pnpm/yarn, but npm is the default here.
 - A Telegram bot token from @BotFather
 - A Google AI Studio API key (for Gemini) or compatible key for the configured model
 
 ## Getting Started
 
-1) Clone and install
-- Using npm (package-lock.json is present in this repo):
-  - npm install
-- Using pnpm (optional):
-  - pnpm install
+1) Install dependencies
+- npm install
 
 2) Configure environment
-Create a .env file in the project root with the variables below. There is no example.env in this repo; create it manually.
+Create a .env file in the project root with the variables below.
 
 Example .env
 TELEGRAM_BOT_TOKEN=your_telegram_bot_token
@@ -54,24 +52,31 @@ ADK_DEBUG=false
 - npm run dev
   - Starts tsx watching src/index.ts
 
-5) Build and run in production
+5) Build and run in production (local)
 - npm run build
   - Compiles to dist/
 - npm start
-  - Runs dist/index.js
+  - Start script currently points to dist/index.js. If your build outputs dist/src/index.js, see Entry Points for the TODO to reconcile.
+
+6) Docker (optional)
+- Build: docker build -t medai:local .
+- Run (env-file): docker run --env-file .env --name medai-bot --rm medai:local
+  - Note: The Dockerfile uses Node 20-alpine and CMD to run dist/src/index.js. Ensure build output matches or adjust CMD accordingly.
 
 ## Scripts
 Defined in package.json:
 - dev: tsx watch src/index.ts
 - build: tsc
-- prebuild: pnpm clean (invoked by build; see note below)
-- clean: rimraf dist
+- prebuild: npm run clean
+- clean: node -e "require('fs').rmSync('dist', { recursive: true, force: true })"
 - start: node dist/index.js
 
-Note: prebuild uses pnpm clean. If you use npm only, prebuild will still execute the clean script correctly because it is defined in package.json. You do not need pnpm installed to run npm run build.
+Note: prebuild runs the clean script via npm run clean prior to tsc. No need for pnpm; npm is the default in this repo.
 
 ## Entry Points
-- Runtime entry: src/index.ts (compiled to dist/index.js)
+- Runtime entry: src/index.ts
+- Build output: By default tsc emits to dist/. With the current tsconfig (rootDir: ./, include: src/**/*.ts), compiled entry typically ends up at dist/src/index.js.
+  - package.json "main" and start script reference dist/index.js. TODO: Reconcile by either changing tsconfig.rootDir to "src" or updating the start path.
 - Root agent builder: src/agents/agent.ts
 - Telegram MCP agent: src/agents/telegram-agent/agent.ts and src/agents/telegram-agent/tool.ts
 
@@ -106,10 +111,15 @@ Validated in src/env.ts using zod. Required unless defaulted.
     - telegram-agent/
       - agent.ts — defines Telegram-facing agent
       - tool.ts — initializes MCP Telegram tools
+- .gitignore — ignores dist/, env files, and src/data/
+- tsconfig.json — TypeScript config (emits to dist/)
+- package.json — scripts and dependencies
+- Dockerfile — container build/runtime config (CMD runs dist/src/index.js)
 
 
 ## Data and Persistence
-- This repository does not explicitly configure a database. A src/data/ path is ignored in .gitignore for potential future use. TODO: document any persistence if added later.
+- No database is configured. A src/data/ path is ignored in .gitignore for potential future use.
+- TODO: Document any persistence or storage if added later (e.g., conversation history store).
 
 ## Running with ADK CLI (Optional)
 If you use the ADK CLI for local prototyping, you can install it globally:
@@ -117,7 +127,7 @@ If you use the ADK CLI for local prototyping, you can install it globally:
 Then you may try adk run or adk web for interactive testing. These are optional and not required to run MedAI.
 
 ## License
-- MIT (as declared in package.json). TODO: add a LICENSE file to the repository root if one is desired.
+- MIT license (declared in package.json). TODO: Add a LICENSE file to the repository root to include the full text.
 
 ## Deploying to Vercel (Websites)
 Vercel is optimized for request/response workloads (static sites, Next.js, serverless/edge functions). This project is a long‑running Telegram bot process that keeps a connection open to Telegram via MCP and does not expose an HTTP handler. As‑is, it is not a good fit for Vercel serverless because Vercel does not allow background/long‑lived processes.
@@ -139,7 +149,14 @@ Recommended deployment targets for this repository without refactors:
 
 If you want us to add the webhook HTTP function for Vercel, please confirm and we’ll create a minimal api/telegram endpoint and adapt the Telegram integration accordingly.
 
+## Tests
+- There are currently no automated tests in this repository.
+- TODOs:
+  - Add unit tests (e.g., using vitest or jest) for utils and agent logic.
+  - Add integration tests for the Telegram flow (can be mocked).
+  - Set up CI (e.g., GitHub Actions) to run lint/build/tests.
+
 ## Notes and TODOs
 - Verify Node.js version used in deployment and update Requirements accordingly.
-- Add tests and CI.
-- If Dockerization is required, add a Dockerfile and document usage.
+- Reconcile build output path vs. start script (dist/index.js vs dist/src/index.js).
+- Consider adding a Docker Compose file if more services are introduced.
