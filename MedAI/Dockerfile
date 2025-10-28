@@ -110,31 +110,44 @@
 # CMD ["node", "dist/src/index.js"]
 
 
-
-# Dockerfile
-FROM node:20-alpine
-
-# Enable pnpm
-RUN corepack enable && corepack prepare pnpm@9.12.0 --activate
+# ============ BUILD STAGE ============
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
 # Copy package files
-COPY package.json pnpm-lock.yaml* ./
+COPY package*.json ./
+COPY tsconfig.json ./
 
-# Install deps
-RUN pnpm install --frozen-lockfile
+# Install ALL dependencies (including dev for build)
+RUN npm ci
 
-# Copy code
-COPY . .
+# Copy source
+COPY src ./src
 
-# Build
-RUN pnpm build
+# Build TypeScript
+RUN npm run build
 
-# Production
-ENV NODE_ENV=production
+# ============ RUNTIME STAGE ============
+FROM node:20-alpine AS runtime
 
-# Render uses $PORT
-EXPOSE $PORT
+WORKDIR /app
 
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 adkbot
+
+# Copy built app from builder
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/node_modules ./node_modules
+
+# Set non-root user
+USER adkbot
+
+# Expose port (optional, for health checks or reverse proxy)
+EXPOSE 3000
+
+
+# Start the bot
 CMD ["node", "dist/index.js"]
