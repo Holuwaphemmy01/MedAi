@@ -3,12 +3,12 @@
     "version": "0.0.1",
     "description": "ADK Telegram Bot - A starter project for creating AI-powered Telegram bots with ADK",
     "main": "dist/index.js",
-    "private": true,
+    "private": true, 
 
 	"scripts": {
     "build": "tsc",
     "dev": "tsx watch src/index.ts",
-    "start": "node dist/index.js",
+    "start": "node dist/src/index.js",
     "clean": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\"",
     "prebuild": "npm run clean"
 	},
