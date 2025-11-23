@@ -36,6 +36,8 @@ export const getQuestionFromUserAgent = () => {
     }
   })();
 
+
+
   const questionLoop = new LoopAgent({
     name: "questionLoopAgent",
     description: "Keeps asking user for missing medical details until all info is gathered",
