@@ -10,6 +10,9 @@ COPY package*.json ./
 # Install pnpm globally and project dependencies
 RUN npm install -g pnpm && pnpm install
 
+# Preinstall MCP Telegram client to avoid runtime npx fetch timeouts
+RUN npm install -g @iqai/mcp-telegram
+
 # Copy project files
 COPY . .
 
